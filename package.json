@@ -8,7 +8,7 @@
     "test": "playwright test",
     "test:chrome": "playwright test --project=chromium",
     "test:firefox": "playwright test --project=firefox",
-    "test:ci": "playwright test --reporter=line",
+    "test:ci": "playwright test",
     "lint": "tsc --noEmit"
   },
   "repository": {
