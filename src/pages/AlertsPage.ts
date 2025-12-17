@@ -6,6 +6,8 @@ export class AlertsPage extends BasePage {
   readonly timerAlertButton: Locator;
   readonly confirmAlertButton: Locator;
   readonly promptAlertButton: Locator;
+  readonly confirmResult: Locator;
+  readonly promptResult: Locator;
   readonly path = "/alerts";
 
   constructor(page: Page) {
@@ -14,19 +16,35 @@ export class AlertsPage extends BasePage {
     this.timerAlertButton = page.locator("#timerAlertButton");
     this.confirmAlertButton = page.locator("#confirmButton");
     this.promptAlertButton = page.locator("#promtButton");
+    this.confirmResult = page.locator("#confirmResult");
+    this.promptResult = page.locator("#promptResult");
   }
 
   async openPage(): Promise<void> {
     await this.open(this.path);
   }
 
-  async triggerSimpleAlert(): Promise<void> {}
+  async clickSimpleAlert(): Promise<void> {
+    await this.simpleAlertButton.click();
+  }
 
-  async triggerTimerAlert(): Promise<void> {}
+  async clickTimerAlert(): Promise<void> {
+    await this.timerAlertButton.click();
+  }
 
-  async triggerConfirmAlert(): Promise<void> {}
+  async clickConfirmAlert(): Promise<void> {
+    await this.confirmAlertButton.click();
+  }
 
-  async triggerPromptAlert(): Promise<void> {}
+  async clickPromptAlert(): Promise<void> {
+    await this.promptAlertButton.click();
+  }
 
-  async assertAlertResult(expected: string): Promise<void> {}
+  async getConfirmResultText(): Promise<string | null> {
+    return this.confirmResult.textContent();
+  }
+
+  async getPromptResultText(): Promise<string | null> {
+    return this.promptResult.textContent();
+  }
 }

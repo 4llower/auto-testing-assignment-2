@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Locator, Page } from "@playwright/test";
 import { BasePage } from "./BasePage.js";
 
@@ -7,7 +8,7 @@ export interface PracticeFormData {
   email: string;
   gender: string;
   mobile: string;
-  birthDate: string;
+  birthDate: Date;
   subjects: string[];
   hobbies: string[];
   picturePath: string;
@@ -20,17 +21,18 @@ export class AutomationPracticeFormPage extends BasePage {
   readonly inputFirstName: Locator;
   readonly inputLastName: Locator;
   readonly inputEmail: Locator;
-  readonly genderRadios: Locator;
   readonly inputMobile: Locator;
   readonly inputBirthDate: Locator;
   readonly subjectInput: Locator;
-  readonly hobbyCheckboxes: Locator;
   readonly uploadPicture: Locator;
   readonly inputAddress: Locator;
   readonly stateDropdown: Locator;
   readonly cityDropdown: Locator;
   readonly submitButton: Locator;
+  readonly form: Locator;
+  readonly modal: Locator;
   readonly resultTable: Locator;
+  readonly invalidInputs: Locator;
   readonly path = "/automation-practice-form";
 
   constructor(page: Page) {
@@ -38,28 +40,95 @@ export class AutomationPracticeFormPage extends BasePage {
     this.inputFirstName = page.locator("#firstName");
     this.inputLastName = page.locator("#lastName");
     this.inputEmail = page.locator("#userEmail");
-    this.genderRadios = page.locator('input[name="gender"]');
     this.inputMobile = page.locator("#userNumber");
     this.inputBirthDate = page.locator("#dateOfBirthInput");
     this.subjectInput = page.locator("#subjectsInput");
-    this.hobbyCheckboxes = page.locator('input[type="checkbox"]');
     this.uploadPicture = page.locator("#uploadPicture");
     this.inputAddress = page.locator("#currentAddress");
     this.stateDropdown = page.locator("#state");
     this.cityDropdown = page.locator("#city");
     this.submitButton = page.locator("#submit");
-    this.resultTable = page.locator(".modal-content table");
+    this.form = page.locator("#userForm");
+    this.modal = page.locator(".modal-content");
+    this.resultTable = this.modal.locator("table");
+    this.invalidInputs = this.form.locator("input:invalid");
   }
 
   async openPage(): Promise<void> {
     await this.open(this.path);
   }
 
-  async fillForm(data: PracticeFormData): Promise<void> {}
+  async fillForm(data: PracticeFormData): Promise<void> {
+    await this.inputFirstName.fill(data.firstName);
+    await this.inputLastName.fill(data.lastName);
+    await this.inputEmail.fill(data.email);
+    await this.page
+      .getByLabel(data.gender, { exact: true })
+      .check({ force: true });
+    await this.inputMobile.fill(data.mobile);
+    await this.setBirthDate(data.birthDate);
 
-  async validateRequiredFields(): Promise<void> {}
+    for (const subject of data.subjects) {
+      await this.subjectInput.fill(subject);
+      await this.subjectInput.press("Enter");
+    }
 
-  async submit(): Promise<void> {}
+    for (const hobby of data.hobbies) {
+      await this.page.getByLabel(hobby, { exact: true }).check({ force: true });
+    }
 
-  async assertSubmission(data: PracticeFormData): Promise<void> {}
+    const absolutePicturePath = path.resolve(process.cwd(), data.picturePath);
+    await this.uploadPicture.setInputFiles(absolutePicturePath);
+    await this.inputAddress.fill(data.address);
+    await this.selectState(data.state);
+    await this.selectCity(data.city);
+  }
+
+  async submit(): Promise<void> {
+    await this.submitButton.click();
+    await this.modal.waitFor({ state: "visible" });
+  }
+
+  resultValue(label: string): Locator {
+    return this.resultTable
+      .locator("tr")
+      .filter({ hasText: label })
+      .locator("td")
+      .last();
+  }
+
+  private async setBirthDate(date: Date): Promise<void> {
+    await this.inputBirthDate.click();
+    await this.page
+      .locator(".react-datepicker__month-select")
+      .selectOption(date.getMonth().toString());
+    await this.page
+      .locator(".react-datepicker__year-select")
+      .selectOption(date.getFullYear().toString());
+    const day = date.getDate().toString().padStart(2, "0");
+    await this.page
+      .locator(
+        `.react-datepicker__day--0${day}:not(.react-datepicker__day--outside-month)`
+      )
+      .first()
+      .click();
+  }
+
+  private async selectState(state: string): Promise<void> {
+    await this.stateDropdown.click();
+    await this.page
+      .locator('#stateCity-wrapper div[id^="react-select-3-option-"]')
+      .filter({ hasText: state })
+      .first()
+      .click();
+  }
+
+  private async selectCity(city: string): Promise<void> {
+    await this.cityDropdown.click();
+    await this.page
+      .locator('#stateCity-wrapper div[id^="react-select-4-option-"]')
+      .filter({ hasText: city })
+      .first()
+      .click();
+  }
 }

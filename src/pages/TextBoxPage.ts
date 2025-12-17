@@ -1,4 +1,4 @@
-import { Locator, Page } from "@playwright/test";
+import { expect, Locator, Page } from "@playwright/test";
 import { BasePage } from "./BasePage.js";
 
 export interface TextBoxData {
@@ -31,11 +31,39 @@ export class TextBoxPage extends BasePage {
     await this.open(this.path);
   }
 
-  async fillForm(data: TextBoxData): Promise<void> {}
+  async fillForm(data: TextBoxData): Promise<void> {
+    await this.inputFullName.fill(data.fullName);
+    await this.inputEmail.fill(data.email);
+    await this.inputCurrentAddress.fill(data.currentAddress);
+    await this.inputPermanentAddress.fill(data.permanentAddress);
+  }
 
-  async validateMandatoryFields(): Promise<void> {}
+  async validateMandatoryFields(): Promise<void> {
+    await this.inputFullName.fill("Invalid Email User");
+    await this.inputEmail.fill("invalid-email");
+    await this.submitButton.click();
+    await expect(this.inputEmail).toHaveClass(/field-error/);
+    await expect(this.outputSection).toBeHidden();
+  }
 
-  async submit(): Promise<void> {}
+  async submit(): Promise<void> {
+    await this.submitButton.click();
+    await this.outputSection.waitFor({ state: "visible" });
+  }
 
-  async assertOutput(data: TextBoxData): Promise<void> {}
+  async assertOutput(data: TextBoxData): Promise<void> {
+    await expect(this.outputSection).toBeVisible();
+    await expect(this.outputSection.locator("#name")).toHaveText(
+      `Name:${data.fullName}`
+    );
+    await expect(this.outputSection.locator("#email")).toHaveText(
+      `Email:${data.email}`
+    );
+    await expect(this.outputSection.locator("#currentAddress")).toContainText(
+      data.currentAddress
+    );
+    await expect(this.outputSection.locator("#permanentAddress")).toContainText(
+      data.permanentAddress
+    );
+  }
 }
