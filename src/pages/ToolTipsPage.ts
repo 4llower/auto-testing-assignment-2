@@ -8,7 +8,6 @@ export class ToolTipsPage extends BasePage {
   readonly randomTextLink: Locator;
   readonly tooltipContent: Locator;
   readonly path = "/tool-tips";
-  private adsGuardRegistered = false;
 
   constructor(page: Page) {
     super(page);
@@ -20,9 +19,7 @@ export class ToolTipsPage extends BasePage {
   }
 
   async openPage(): Promise<void> {
-    await this.registerAdBlockers();
     await this.open(this.path);
-    await this.removeAdOverlays();
   }
 
   async hoverTarget(target: Locator): Promise<void> {
@@ -56,47 +53,5 @@ export class ToolTipsPage extends BasePage {
       return "You hovered over the 1.10.32";
     }
     return "You hovered over the 1st text";
-  }
-
-  private async registerAdBlockers(): Promise<void> {
-    if (this.adsGuardRegistered) {
-      return;
-    }
-
-    this.adsGuardRegistered = true;
-    const adPatterns = [
-      "**/*googleads.g.doubleclick.net/*",
-      "**/*adservice.google.com/*",
-      "**/*googlesyndication.com/*",
-      "**/*doubleclick.net/*",
-    ];
-
-    await Promise.all(
-      adPatterns.map((pattern) =>
-        this.page.route(pattern, (route) => route.abort())
-      )
-    );
-  }
-
-  private async removeAdOverlays(): Promise<void> {
-    // Occasionally DemoQA renders floating ad slots over the widgets area.
-    const nuisanceSelectors = [
-      "#fixedban",
-      "#RightSide_Advertisement",
-      "iframe[src*='googleads']",
-      "iframe[id^='google_ads']",
-      "div[id^='google_ads']",
-    ];
-
-    for (const selector of nuisanceSelectors) {
-      const candidates = this.page.locator(selector);
-      if ((await candidates.count()) === 0) {
-        continue;
-      }
-
-      await candidates.evaluateAll((elements) =>
-        elements.forEach((element) => element.remove())
-      );
-    }
   }
 }
