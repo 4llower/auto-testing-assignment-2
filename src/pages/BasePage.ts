@@ -10,7 +10,7 @@ export abstract class BasePage {
 
   async open(path: string): Promise<void> {
     await this.registerAdBlockers();
-    await this.page.goto(path);
+    await this.page.goto(path, { waitUntil: "domcontentloaded" });
     await this.removeAdOverlays();
   }
 
