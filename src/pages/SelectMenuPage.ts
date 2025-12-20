@@ -7,7 +7,6 @@ export class SelectMenuPage extends BasePage {
   readonly selectValueDisplay: Locator;
   readonly selectOneDisplay: Locator;
   readonly oldStyleSelectMenu: Locator;
-  readonly multiSelectInput: Locator;
   readonly standardSelect: Locator;
   readonly path = "/select-menu";
 
@@ -22,7 +21,6 @@ export class SelectMenuPage extends BasePage {
       .locator("#selectOne")
       .locator("div[class*='singleValue']");
     this.oldStyleSelectMenu = page.locator("#oldSelectMenu");
-    this.multiSelectInput = page.locator("#react-select-4-input");
     this.standardSelect = page.locator("#cars");
   }
 
@@ -34,6 +32,12 @@ export class SelectMenuPage extends BasePage {
     return this.page
       .locator("#selectMenuContainer p", { hasText: "Multiselect drop down" })
       .locator("xpath=following-sibling::div[1]");
+  }
+
+  private get multiSelectInput(): Locator {
+    return this.multiSelectSection
+      .locator("input[aria-autocomplete='list']")
+      .first();
   }
 
   async openPage(): Promise<void> {
@@ -61,9 +65,10 @@ export class SelectMenuPage extends BasePage {
   }
 
   async getOldStyleSelection(): Promise<string | null> {
-    const selectedText = await this.oldStyleSelectMenu
-      .locator("option:checked")
-      .textContent();
+    await this.oldStyleSelectMenu.waitFor({ state: "visible" });
+    const selectedOption = this.oldStyleSelectMenu.locator("option:checked");
+    await selectedOption.first().waitFor({ state: "attached" });
+    const selectedText = await selectedOption.first().textContent();
     const normalized = selectedText?.trim() ?? "";
     return normalized || null;
   }
@@ -86,6 +91,10 @@ export class SelectMenuPage extends BasePage {
   }
 
   async selectMultiple(values: string[]): Promise<void> {
+    const container = this.multiSelectSection.first();
+    await container.scrollIntoViewIfNeeded();
+    await container.click();
+    await this.multiSelectInput.waitFor({ state: "attached" });
     for (const value of values) {
       await this.multiSelectInput.fill(value);
       await this.multiSelectInput.press("Enter");
@@ -96,6 +105,8 @@ export class SelectMenuPage extends BasePage {
     trigger: Locator,
     optionLabel: string
   ): Promise<void> {
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.waitFor({ state: "visible" });
     await trigger.fill(optionLabel);
     await trigger.press("Enter");
   }

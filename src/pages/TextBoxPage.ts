@@ -57,6 +57,7 @@ export class TextBoxPage extends BasePage {
   }
 
   async fillForm(data: TextBoxData): Promise<void> {
+    await this.inputFullName.waitFor({ state: "visible" });
     await this.inputFullName.fill(data.fullName);
     await this.inputEmail.fill(data.email);
     await this.inputCurrentAddress.fill(data.currentAddress);

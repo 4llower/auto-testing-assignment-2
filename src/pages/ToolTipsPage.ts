@@ -24,8 +24,11 @@ export class ToolTipsPage extends BasePage {
 
   async hoverTarget(target: Locator): Promise<void> {
     await target.scrollIntoViewIfNeeded();
-    await target.hover();
-    await this.tooltipContent.waitFor({ state: "visible" });
+    await target.hover({ force: true });
+    await target.dispatchEvent("mouseenter");
+    await target.dispatchEvent("mouseover");
+    await target.dispatchEvent("mousemove");
+    await this.tooltipContent.first().waitFor({ state: "visible" });
   }
 
   async getTooltipText(): Promise<string | null> {
