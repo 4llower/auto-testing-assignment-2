@@ -1,4 +1,4 @@
-import { expect, Locator, Page } from "@playwright/test";
+import { Locator, Page } from "@playwright/test";
 import { BasePage } from "./BasePage.js";
 
 export interface TextBoxData {
@@ -31,6 +31,31 @@ export class TextBoxPage extends BasePage {
     await this.open(this.path);
   }
 
+  async getOutputFullName(): Promise<string | null> {
+    return this.extractOutputValue("#name", "Name:");
+  }
+
+  async getOutputEmail(): Promise<string | null> {
+    return this.extractOutputValue("#email", "Email:");
+  }
+
+  async getOutputCurrentAddress(): Promise<string | null> {
+    return this.extractOutputValue("#currentAddress", "Current Address :");
+  }
+
+  async getOutputPermanentAddress(): Promise<string | null> {
+    return this.extractOutputValue("#permanentAddress", "Permananet Address :");
+  }
+
+  async emailFieldHasError(): Promise<boolean> {
+    const classAttr = await this.inputEmail.getAttribute("class");
+    return classAttr?.split(/\s+/).includes("field-error") ?? false;
+  }
+
+  async isOutputVisible(): Promise<boolean> {
+    return this.outputSection.isVisible();
+  }
+
   async fillForm(data: TextBoxData): Promise<void> {
     await this.inputFullName.fill(data.fullName);
     await this.inputEmail.fill(data.email);
@@ -38,32 +63,31 @@ export class TextBoxPage extends BasePage {
     await this.inputPermanentAddress.fill(data.permanentAddress);
   }
 
-  async validateMandatoryFields(): Promise<void> {
-    await this.inputFullName.fill("Invalid Email User");
-    await this.inputEmail.fill("invalid-email");
-    await this.submitButton.click();
-    await expect(this.inputEmail).toHaveClass(/field-error/);
-    await expect(this.outputSection).toBeHidden();
-  }
-
   async submit(): Promise<void> {
     await this.submitButton.click();
+  }
+
+  async waitForOutput(): Promise<void> {
     await this.outputSection.waitFor({ state: "visible" });
   }
 
-  async assertOutput(data: TextBoxData): Promise<void> {
-    await expect(this.outputSection).toBeVisible();
-    await expect(this.outputSection.locator("#name")).toHaveText(
-      `Name:${data.fullName}`
-    );
-    await expect(this.outputSection.locator("#email")).toHaveText(
-      `Email:${data.email}`
-    );
-    await expect(this.outputSection.locator("#currentAddress")).toContainText(
-      data.currentAddress
-    );
-    await expect(this.outputSection.locator("#permanentAddress")).toContainText(
-      data.permanentAddress
-    );
+  private async extractOutputValue(
+    selector: string,
+    prefix: string
+  ): Promise<string | null> {
+    const element = this.outputSection.locator(selector);
+    if ((await element.count()) === 0) {
+      return null;
+    }
+    const rawText = await element.textContent();
+    if (!rawText) {
+      return null;
+    }
+    const normalized = rawText.trim();
+    if (!normalized.startsWith(prefix)) {
+      return normalized || null;
+    }
+    const withoutPrefix = normalized.slice(prefix.length).trim();
+    return withoutPrefix || null;
   }
 }

@@ -1,64 +1,125 @@
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { AutomationPracticeFormPage } from "../src/pages/index.js";
 import { buildPracticeFormData } from "../src/support/dataFactory.js";
 
 test.describe.configure({ mode: "parallel" });
 
-const formDataSets = ["primary", "secondary"].map((label) => ({
-  label,
-  data: buildPracticeFormData(),
-}));
-
 test.describe("Automation practice form", () => {
-  for (const set of formDataSets) {
-    test(`submits ${set.label} dataset`, async ({ page }) => {
-      const formPage = new AutomationPracticeFormPage(page);
-      const data = set.data;
+  test("displays submitted student name", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
 
-      await formPage.openPage();
-      await formPage.fillForm(data);
-      await formPage.submit();
+    expect(await formPage.getResultValueText("Student Name")).toBe(
+      `${data.firstName} ${data.lastName}`
+    );
+  });
 
-      await expect(formPage.resultValue("Student Name")).toHaveText(
-        `${data.firstName} ${data.lastName}`
-      );
-      await expect(formPage.resultValue("Student Email")).toHaveText(
-        data.email
-      );
-      await expect(formPage.resultValue("Gender")).toHaveText(data.gender);
-      await expect(formPage.resultValue("Mobile")).toHaveText(data.mobile);
-      await expect(formPage.resultValue("Subjects")).toHaveText(
-        data.subjects.join(", ")
-      );
-      await expect(formPage.resultValue("Hobbies")).toHaveText(
-        data.hobbies.join(", ")
-      );
-      await expect(formPage.resultValue("Picture")).toHaveText("sample.png");
-      await expect(formPage.resultValue("Address")).toHaveText(data.address);
-      await expect(formPage.resultValue("State and City")).toHaveText(
-        `${data.state} ${data.city}`
-      );
+  test("displays submitted student email", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
 
-      const birthDateCell = formPage.resultValue("Date of Birth");
-      await expect(birthDateCell).toContainText(
-        data.birthDate.toLocaleString("en-US", { month: "long" })
-      );
-      await expect(birthDateCell).toContainText(
-        data.birthDate.getFullYear().toString()
-      );
-      await expect(birthDateCell).toContainText(
-        data.birthDate.getDate().toString()
-      );
-    });
-  }
+    expect(await formPage.getResultValueText("Student Email")).toBe(data.email);
+  });
 
-  test("blocks submission when mandatory data missing", async ({ page }) => {
-    const formPage = new AutomationPracticeFormPage(page);
-    await formPage.openPage();
-    await formPage.submitButton.click();
+  test("displays submitted gender", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
 
-    await expect(formPage.form).toHaveClass(/was-validated/);
-    await expect(formPage.invalidInputs).not.toHaveCount(0);
-    await expect(formPage.modal).toHaveCount(0);
+    expect(await formPage.getResultValueText("Gender")).toBe(data.gender);
+  });
+
+  test("displays submitted mobile number", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("Mobile")).toBe(data.mobile);
+  });
+
+  test("displays submitted subjects", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("Subjects")).toBe(
+      data.subjects.join(", ")
+    );
+  });
+
+  test("displays submitted hobbies", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("Hobbies")).toBe(
+      data.hobbies.join(", ")
+    );
+  });
+
+  test("displays uploaded picture name", async ({ page }) => {
+    const { formPage } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("Picture")).toBe("sample.png");
+  });
+
+  test("displays submitted address", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("Address")).toBe(data.address);
+  });
+
+  test("displays selected state and city", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("State and City")).toBe(
+      `${data.state} ${data.city}`
+    );
+  });
+
+  test("displays submitted birth date", async ({ page }) => {
+    const { formPage, data } = await submitPracticeForm(page);
+
+    expect(await formPage.getResultValueText("Date of Birth")).toBe(
+      formatBirthDateForResult(data.birthDate)
+    );
+  });
+
+  test("marks form as validated when submission lacks mandatory data", async ({
+    page,
+  }) => {
+    const formPage = await attemptInvalidSubmission(page);
+
+    expect(await formPage.formHasValidationState()).toBe(true);
+  });
+
+  test("highlights invalid inputs when submission fails", async ({ page }) => {
+    const formPage = await attemptInvalidSubmission(page);
+
+    expect(await formPage.getInvalidInputCount()).toBeGreaterThan(0);
+  });
+
+  test("keeps result modal hidden when submission fails", async ({ page }) => {
+    const formPage = await attemptInvalidSubmission(page);
+
+    expect(await formPage.isModalVisible()).toBe(false);
   });
 });
+
+async function submitPracticeForm(page: Page) {
+  const formPage = new AutomationPracticeFormPage(page);
+  const data = buildPracticeFormData();
+
+  await formPage.openPage();
+  await formPage.fillForm(data);
+  await formPage.submit();
+
+  return { formPage, data } as const;
+}
+
+async function attemptInvalidSubmission(page: Page) {
+  const formPage = new AutomationPracticeFormPage(page);
+
+  await formPage.openPage();
+  await formPage.submitButton.click();
+
+  return formPage;
+}
+
+function formatBirthDateForResult(date: Date): string {
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = date.toLocaleString("en-US", { month: "long" });
+  const year = date.getFullYear().toString();
+  return `${day} ${month},${year}`;
+}

@@ -41,10 +41,19 @@ export class AlertsPage extends BasePage {
   }
 
   async getConfirmResultText(): Promise<string | null> {
-    return this.confirmResult.textContent();
+    const text = await this.confirmResult.textContent();
+    return text?.trim() ?? null;
   }
 
   async getPromptResultText(): Promise<string | null> {
-    return this.promptResult.textContent();
+    if ((await this.promptResult.count()) === 0) {
+      return null;
+    }
+    const text = await this.promptResult.textContent();
+    return text?.trim() ?? null;
+  }
+
+  async hasPromptResult(): Promise<boolean> {
+    return (await this.promptResult.count()) > 0;
   }
 }

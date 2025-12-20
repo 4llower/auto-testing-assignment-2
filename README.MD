@@ -10,6 +10,8 @@
 - `npm test`
 - `npm run test:chrome`
 - `npm run test:firefox`
+- Single spec: `npx playwright test tests/text-box.spec.ts`
+- Single test in a spec: `npx playwright test tests/text-box.spec.ts -g "rejects invalid email in mandatory field"`
 
 ### Notes
 

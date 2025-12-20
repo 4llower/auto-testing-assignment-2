@@ -50,7 +50,7 @@ test.describe("Alerts coverage", () => {
       (dialog) => dialog.accept()
     );
 
-    await expect(alertsPage.confirmResult).toHaveText("You selected Ok");
+    expect(await alertsPage.getConfirmResultText()).toBe("You selected Ok");
   });
 
   test("dismisses confirm alert", async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe("Alerts coverage", () => {
       (dialog) => dialog.dismiss()
     );
 
-    await expect(alertsPage.confirmResult).toHaveText("You selected Cancel");
+    expect(await alertsPage.getConfirmResultText()).toBe("You selected Cancel");
   });
 
   test("submits prompt input", async ({ page }) => {
@@ -77,7 +77,7 @@ test.describe("Alerts coverage", () => {
       (dialog) => dialog.accept(promptInput)
     );
 
-    await expect(alertsPage.promptResult).toHaveText(
+    expect(await alertsPage.getPromptResultText()).toBe(
       `You entered ${promptInput}`
     );
   });
@@ -92,6 +92,6 @@ test.describe("Alerts coverage", () => {
       (dialog) => dialog.dismiss()
     );
 
-    await expect(alertsPage.promptResult).toHaveCount(0);
+    expect(await alertsPage.hasPromptResult()).toBe(false);
   });
 });

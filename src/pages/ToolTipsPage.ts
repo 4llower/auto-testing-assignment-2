@@ -1,4 +1,4 @@
-import { expect, Locator, Page } from "@playwright/test";
+import { Locator, Page } from "@playwright/test";
 import { BasePage } from "./BasePage.js";
 
 export class ToolTipsPage extends BasePage {
@@ -28,30 +28,15 @@ export class ToolTipsPage extends BasePage {
     await this.tooltipContent.waitFor({ state: "visible" });
   }
 
-  async assertTooltipText(expected: string): Promise<void> {
-    if (!expected) {
-      await expect(this.tooltipContent).toBeHidden();
-      return;
+  async getTooltipText(): Promise<string | null> {
+    if ((await this.tooltipContent.count()) === 0) {
+      return null;
     }
-
-    const resolved = this.resolveTooltipCopy(expected);
-    await expect(this.tooltipContent).toHaveText(resolved);
+    const text = await this.tooltipContent.textContent();
+    return text?.trim() ?? null;
   }
 
-  private resolveTooltipCopy(targetName: string): string {
-    const normalized = targetName.toLowerCase();
-    if (normalized === "button") {
-      return "You hovered over the Button";
-    }
-    if (normalized === "text field") {
-      return "You hovered over the text field";
-    }
-    if (normalized === "contrary link") {
-      return "You hovered over the Contrary";
-    }
-    if (normalized === "random text link") {
-      return "You hovered over the 1.10.32";
-    }
-    return "You hovered over the 1st text";
+  async isTooltipVisible(): Promise<boolean> {
+    return this.tooltipContent.isVisible();
   }
 }

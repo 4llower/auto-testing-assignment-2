@@ -33,6 +33,8 @@ export class AutomationPracticeFormPage extends BasePage {
   readonly modal: Locator;
   readonly resultTable: Locator;
   readonly invalidInputs: Locator;
+  readonly monthSelect: Locator;
+  readonly yearSelect: Locator;
   readonly path = "/automation-practice-form";
 
   constructor(page: Page) {
@@ -52,10 +54,34 @@ export class AutomationPracticeFormPage extends BasePage {
     this.modal = page.locator(".modal-content");
     this.resultTable = this.modal.locator("table");
     this.invalidInputs = this.form.locator("input:invalid");
+    this.monthSelect = page.locator(".react-datepicker__month-select");
+    this.yearSelect = page.locator(".react-datepicker__year-select");
   }
 
   async openPage(): Promise<void> {
     await this.open(this.path);
+  }
+
+  async getResultValueText(label: string): Promise<string | null> {
+    const cell = this.resultValue(label);
+    if ((await cell.count()) === 0) {
+      return null;
+    }
+    const text = await cell.textContent();
+    return text?.trim() ?? null;
+  }
+
+  async formHasValidationState(): Promise<boolean> {
+    const classAttr = await this.form.getAttribute("class");
+    return classAttr?.split(/\s+/).includes("was-validated") ?? false;
+  }
+
+  async getInvalidInputCount(): Promise<number> {
+    return this.invalidInputs.count();
+  }
+
+  async isModalVisible(): Promise<boolean> {
+    return this.modal.isVisible();
   }
 
   async fillForm(data: PracticeFormData): Promise<void> {
@@ -99,19 +125,10 @@ export class AutomationPracticeFormPage extends BasePage {
 
   private async setBirthDate(date: Date): Promise<void> {
     await this.inputBirthDate.click();
-    await this.page
-      .locator(".react-datepicker__month-select")
-      .selectOption(date.getMonth().toString());
-    await this.page
-      .locator(".react-datepicker__year-select")
-      .selectOption(date.getFullYear().toString());
+    await this.monthSelect.selectOption(date.getMonth().toString());
+    await this.yearSelect.selectOption(date.getFullYear().toString());
     const day = date.getDate().toString().padStart(2, "0");
-    await this.page
-      .locator(
-        `.react-datepicker__day--0${day}:not(.react-datepicker__day--outside-month)`
-      )
-      .first()
-      .click();
+    await this.datePickerDay(day).first().click();
   }
 
   private async selectState(state: string): Promise<void> {
@@ -130,5 +147,11 @@ export class AutomationPracticeFormPage extends BasePage {
       .filter({ hasText: city })
       .first()
       .click();
+  }
+
+  private datePickerDay(day: string): Locator {
+    return this.page.locator(
+      `.react-datepicker__day--0${day}:not(.react-datepicker__day--outside-month)`
+    );
   }
 }
